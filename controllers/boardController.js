@@ -1,10 +1,12 @@
 const Board = require("../models/board");
+const User = require("../models/user");
 const OpenAI = require('openai');
 require('dotenv').config();
 const axios = require('axios');
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
+const createJWT= require("../controllers/utils/index");
 // @desc    Create new board
 // @route   POST /api/boards
 const createBoard = async (req, res) => {
@@ -225,7 +227,7 @@ const addColumn = async (req, res) => {
   };
 
   const addCardToTask = async (req, res) => {
-    // console.log("req body in add to task",req.body)
+    console.log("req body in add to task",req.body)
     const { boardId, columnIndex,cardIndex,user } = req.body.data;
     console.log(boardId)
     const board = await Board.findById(boardId);
@@ -268,7 +270,49 @@ const addColumn = async (req, res) => {
     // await board.save();
     // res.status(200).json(board);
   };
-
+  const loginUser = async (req, res) => {
+    const { email, password } = req.body;
+    console.log("Login called",email, password)
+  
+    let user = await User.findOne({ email });
+    // console.log(user)
+    if (!user) {
+      return res
+        .status(401)
+        .json({ status: false, message: "Invalid email or password." });
+    }
+  
+    if (!user?.isActive) {
+      return res.status(401).json({
+        status: false,
+        message: "User account has been deactivated, contact the administrator",
+      });
+    }
+  
+    const isMatch = await user.matchPassword(password);
+  
+    if (user && isMatch) {
+      const token =createJWT(res, user._id);
+  
+      user.password = undefined;
+      // user.token=token
+      // console.log(user)
+      res.status(200).json({user,token:token});
+    } else {
+      return res
+        .status(401)
+        .json({ status: false, message: "Invalid email or password" });
+    }
+  }
+const logoutUser = (req, res) => {
+  console.log("Logout called")
+  req.user=null
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+};
 module.exports = {
   createBoard,
   getBoards,
@@ -282,5 +326,7 @@ module.exports = {
   updateColumn,
   deleteColumn,
   aiInsights,
-  addCardToTask
+  addCardToTask,
+  loginUser,
+  logoutUser
 };

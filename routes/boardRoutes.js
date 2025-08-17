@@ -12,7 +12,9 @@ const {
     updateColumn,
     deleteColumn,
     aiInsights,
-    addCardToTask
+    addCardToTask,
+    loginUser,
+    logoutUser
   } = require("../controllers/boardController");
 
 const router = express.Router();
@@ -27,6 +29,8 @@ router.post("/column", addColumn);
 router.delete("/column", deleteColumn);
 router.post("/ai/insights", aiInsights);
 router.post("/addCardToTask", addCardToTask);
+router.post("/login", loginUser);
+router.post("/logout", logoutUser);
 
 
 module.exports = router;
